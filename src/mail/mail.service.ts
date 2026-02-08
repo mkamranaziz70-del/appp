@@ -14,7 +14,7 @@ interface GenericMailOptions {
 @Injectable()
 export class MailService {
   private transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
+    from: `"BoxxPilot" <${process.env.MAIL_FROM}>`,
     port: Number(process.env.SMTP_PORT),
     secure: false,
     auth: {
