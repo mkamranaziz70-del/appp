@@ -71,7 +71,6 @@ async signupStep2(@Body() body: any) {
   console.log("========== SIGNUP STEP 2 HIT ==========");
 
   const { companyId, fullName, email, phone, password } = body;
-
   if (!companyId || !fullName || !email || !password) {
     throw new BadRequestException('Missing required fields');
   }
@@ -103,26 +102,17 @@ async signupStep2(@Body() body: any) {
     attempts: 0,
   });
 
-  // 🔥🔥🔥 FIRE & FORGET EMAIL (NO AWAIT)
-  this.mailService
-    .sendGenericMail({
-      to: normalizedEmail,
-      subject: 'Your BoxxPilot verification code',
-      html: `
-        <h2>Email Verification</h2>
-        <h1>${otp}</h1>
-      `,
-    })
-    .then(() => {
-      console.log("✅ OTP EMAIL SENT");
-    })
-    .catch(err => {
-      console.error("❌ OTP EMAIL FAILED (IGNORED)");
-      console.error(err);
-    });
+  // ✅ AWAIT + ERROR VISIBILITY
+  await this.mailService.sendGenericMail({
+    to: normalizedEmail,
+    subject: 'Your BoxxPilot verification code',
+    html: `
+      <h2>Email Verification</h2>
+      <h1>${otp}</h1>
+    `,
+  });
 
-  // ✅ RESPONSE IMMEDIATELY
-  console.log("✅ STEP 2 RESPONSE SENT");
+  console.log("✅ OTP EMAIL SENT");
 
   return {
     success: true,
@@ -131,6 +121,7 @@ async signupStep2(@Body() body: any) {
     expiresIn: 300,
   };
 }
+
 
 
 
