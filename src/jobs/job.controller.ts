@@ -16,7 +16,6 @@ import { JobRole, JobStatus } from "@prisma/client";
 import { UseGuards } from "@nestjs/common";
 import { JwtGuard } from "../auth/auth1/jwt.guard";
 import { NotificationsService } from "../notifications/notifications.service";
-import { sendPush } from "../utils/push";
 import { InvoicesService } from "../invoices/invoices.service";
 
 
@@ -77,25 +76,8 @@ await this.notificationsService.createEmployeeNotification({
   type: "JOB_STARTED",
   jobId: job.id,
 });
-const user = await this.prisma.user.findFirst({
-  where: {
-    employee: {
-      id: req.user.employeeId, 
-    },
-  },
-  select: {
-    pushToken: true,
-  },
-});
 
-if (user?.pushToken) {
-  await sendPush(
-    user.pushToken,
-    "Job Started",
-    `Job #${job.jobNumber} has been started`,
-    job.id
-  );
-}
+
 
 
 
@@ -151,25 +133,7 @@ async endJob(@Req() req: any, @Param("id") jobId: string) {
         jobId: job.id,
       });
 
-      const user = await this.prisma.user.findFirst({
-        where: {
-          employee: {
-            id: e.employeeId,
-          },
-        },
-        select: {
-          pushToken: true,
-        },
-      });
 
-      if (user?.pushToken) {
-        await sendPush(
-          user.pushToken,
-          "Job Completed",
-          `Job #${job.jobNumber} has been completed`,
-          job.id
-        );
-      }
     })
   );
 
@@ -226,19 +190,8 @@ async cancelJob(@Req() req: any, @Param("id") jobId: string) {
         jobId: job.id,
       });
 
-      const user = await this.prisma.user.findFirst({
-        where: { employee: { id: e.employeeId } },
-        select: { pushToken: true },
-      });
 
-      if (user?.pushToken) {
-        await sendPush(
-          user.pushToken,
-          "Job Cancelled",
-          `Job #${job.jobNumber} has been cancelled`,
-          job.id
-        );
-      }
+
     })
   );
 
