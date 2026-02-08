@@ -3,7 +3,6 @@ import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JobStatus, NotificationType } from "@prisma/client";
 import { NotificationsService } from "../notifications/notifications.service";
-import { sendPush } from "../utils/push";
 
 @Injectable()
 export class JobsCronService {
@@ -54,21 +53,9 @@ export class JobsCronService {
           jobId: job.id,
         });
 
-        const user = await this.prisma.user.findFirst({
-          where: {
-            employee: { id: e.employeeId },
-          },
-          select: { pushToken: true },
-        });
+     
 
-        if (user?.pushToken) {
-          await sendPush(
-            user.pushToken,
-            "Job Missed",
-            `Job #${job.jobNumber} was missed`,
-            job.id
-          );
-        }
+        
       }
     }
 
@@ -123,21 +110,8 @@ export class JobsCronService {
           jobId: job.id,
         });
 
-        const user = await this.prisma.user.findFirst({
-          where: {
-            employee: { id: e.employeeId },
-          },
-          select: { pushToken: true },
-        });
 
-        if (user?.pushToken) {
-          await sendPush(
-            user.pushToken,
-            "Job Auto Ended",
-            `Job #${job.jobNumber} was automatically ended`,
-            job.id
-          );
-        }
+
       }
     }
   }
