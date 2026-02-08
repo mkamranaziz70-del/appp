@@ -3,6 +3,7 @@ import { QuotationsController } from "./quotations.controller";
 import { QuotationsService } from "./quotations.service";
 import { PrismaModule } from "../../prisma/prisma.module";
 import { PdfService } from "../pdf/pdf.service"; // 👈 ADD THIS
+import { MailService } from "../mail/mail.service";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PdfService } from "../pdf/pdf.service"; // 👈 ADD THIS
   providers: [
     QuotationsService,
     PdfService,          // 👈 REGISTER HERE
+    MailService
   ],
   exports: [
     QuotationsService,
