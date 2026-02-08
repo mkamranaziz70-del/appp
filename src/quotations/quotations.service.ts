@@ -5,33 +5,19 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { randomUUID } from "crypto";
-import * as nodemailer from "nodemailer";
+import { MailService } from "../mail/mail.service";
 import Twilio from "twilio";
 import { Prisma } from "@prisma/client";
 import { PdfService } from "../pdf/pdf.service";
 
 @Injectable()
 export class QuotationsService {
-  private mailer?: nodemailer.Transporter;
   private twilio?: any;
 
-  constructor(private prisma: PrismaService,    private pdfService: PdfService, // 👈 MUST be here
+  constructor(private prisma: PrismaService,    private pdfService: PdfService, private mailService: MailService, // ✅ ADD
+
 ) {
-    if (
-      process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS
-    ) {
-      this.mailer = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT ?? 587),
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    }
+  
 
     if (
       process.env.TWILIO_SID &&
@@ -334,47 +320,40 @@ const pdf = await this.pdfService.generateQuotationPdf({
     },
   });
 
-  // 📧 8️⃣ SEND EMAIL WITH PDF ATTACHMENT
-  if (this.mailer && quote.customer?.email) {
-    await this.mailer.sendMail({
-      from: `"BoxxPilot" <${process.env.SMTP_USER}>`,
-      to: quote.customer.email,
-      subject: `Quotation #${updated.quoteNumber}`,
-      html: `
-        <p>Hello ${quote.customer.fullName},</p>
+ if (quote.customer?.email) {
+  await this.mailService.sendGenericMail({
+    to: quote.customer.email,
+    subject: `Quotation #${updated.quoteNumber}`,
+    html: `
+      <p>Hello ${quote.customer.fullName},</p>
+      <p>Your moving quotation is ready.</p>
 
-        <p>Your moving quotation is ready.</p>
+      <p>
+        <a href="${publicLink}" style="
+          display:inline-block;
+          padding:12px 18px;
+          background:#2563EB;
+          color:#ffffff;
+          border-radius:6px;
+          text-decoration:none;
+          font-weight:600;
+        ">
+          View & Sign Quotation
+        </a>
+      </p>
 
-        <p>
-          <a href="${publicLink}" style="
-            display:inline-block;
-            padding:12px 18px;
-            background:#2563EB;
-            color:#ffffff;
-            border-radius:6px;
-            text-decoration:none;
-            font-weight:600;
-          ">
-            View & Sign Quotation
-          </a>
-        </p>
+      <p>Valid until <b>${expiresAt.toDateString()}</b></p>
+      <p style="color:#6B7280;font-size:13px">— BoxxPilot</p>
+    `,
+    attachments: [
+      {
+        filename: `Quotation-${updated.quoteNumber}.pdf`,
+        path: pdf.absolutePath,
+      },
+    ],
+  });
+}
 
-        <p style="margin-top:12px">
-          Valid until <b>${expiresAt.toDateString()}</b>
-        </p>
-
-        <p style="color:#6B7280;font-size:13px;margin-top:24px">
-          — BoxxPilot
-        </p>
-      `,
-      attachments: [
-        {
-          filename: `Quotation-${updated.quoteNumber}.pdf`,
-          path: pdf.absolutePath, // ✅ REAL FILE PATH
-        },
-      ],
-    });
-  }
 
   // ✅ 9️⃣ FINAL RESPONSE
   return {
@@ -607,18 +586,18 @@ async sendReminder(user: any, id: string) {
     );
   }
 
-  // 📩 EMAIL
-  if (this.mailer && quote.customer?.email) {
-    await this.mailer.sendMail({
-      to: quote.customer.email,
-      subject: `Reminder: Quotation #${quote.quoteNumber}`,
-      html: `
-        <p>Hello ${quote.customer.fullName},</p>
-        <p>This is a reminder regarding your moving quotation.</p>
-        <p>Please review and sign if you wish to proceed.</p>
-      `,
-    });
-  }
+if (quote.customer?.email) {
+  await this.mailService.sendGenericMail({
+    to: quote.customer.email,
+    subject: `Reminder: Quotation #${quote.quoteNumber}`,
+    html: `
+      <p>Hello ${quote.customer.fullName},</p>
+      <p>This is a reminder regarding your moving quotation.</p>
+      <p>Please review and sign if you wish to proceed.</p>
+    `,
+  });
+}
+
 
   // 📱 SMS
   if (this.twilio && quote.customer?.phone) {
