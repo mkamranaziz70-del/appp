@@ -56,14 +56,16 @@ export class PdfService {
       const compiledTemplate = Handlebars.compile(templateHtml);
       const html = compiledTemplate(data);
 
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--font-render-hinting=medium",
-        ],
-      });
+     const browser = await puppeteer.launch({
+  headless: "new",
+  executablePath: puppeteer.executablePath(), // 🔥 MUST
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+  ],
+});
+
 
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: "networkidle0" });
