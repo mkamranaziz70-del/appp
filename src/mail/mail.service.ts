@@ -1,44 +1,50 @@
 import { Injectable, Logger } from "@nestjs/common";
-import * as nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly transporter: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,      // smtp.sendgrid.net
-      port: Number(process.env.SMTP_PORT), // 587
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,    // apikey
-        pass: process.env.SMTP_PASS,    // SG.xxxx
-      },
-    });
+    const apiKey = process.env.SENDGRID_API_KEY;
 
-    this.transporter.verify((err) => {
-      if (err) {
-        this.logger.error("SMTP connection failed ❌", err);
-      } else {
-        this.logger.log("SMTP connection ready ✅");
-      }
-    });
+    if (!apiKey) {
+      this.logger.error("❌ SENDGRID_API_KEY is missing");
+      return;
+    }
+
+    sgMail.setApiKey(apiKey);
+    this.logger.log("✅ SendGrid Mail Service initialized");
   }
 
   async sendGenericMail(options: {
     to: string;
     subject: string;
     html: string;
-    attachments?: { filename: string; path: string }[];
   }) {
-    await this.transporter.sendMail({
-      from: `"BoxxPilot" <${process.env.MAIL_FROM}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      attachments: options.attachments,
-    });
+    try {
+      await sgMail.send({
+        to: options.to,
+        from: {
+          email: process.env.MAIL_FROM!, // must be VERIFIED
+          name: "BoxxPilot",
+        },
+        subject: options.subject,
+        html: options.html,
+      });
+
+      this.logger.log(`📧 Email sent to ${options.to}`);
+    } catch (error: any) {
+      this.logger.error("❌ Email send failed");
+
+      if (error?.response?.body) {
+        this.logger.error(JSON.stringify(error.response.body, null, 2));
+      } else {
+        this.logger.error(error);
+      }
+
+      throw error;
+    }
   }
 
   async sendSetPasswordEmail(email: string, name: string, link: string) {
@@ -47,6 +53,7 @@ export class MailService {
       subject: "Set your BoxxPilot password",
       html: `
         <h2>Hello ${name}</h2>
+        <p>Click below to set your password:</p>
         <a href="${link}">Set Password</a>
       `,
     });
@@ -58,6 +65,7 @@ export class MailService {
       subject: "Confirm your employment – BoxxPilot",
       html: `
         <h2>Welcome ${name}</h2>
+        <p>Please confirm your account:</p>
         <a href="${link}">Confirm Account</a>
       `,
     });
