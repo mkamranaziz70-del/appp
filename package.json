@@ -12,7 +12,7 @@
     "start:dev": "npm run copy:templates && npx nest start --watch",
     "copy:templates": "xcopy templates dist\\templates /E /I /Y",
     "start:debug": "node -r tsconfig-paths/register node_modules/.bin/nest start --debug --watch",
-    "start:prod": "node -r tsconfig-paths/register dist/main",
+    "start:prod": "node dist/main.js"
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -96,3 +96,4 @@
     "testEnvironment": "node"
   }
 }
+
