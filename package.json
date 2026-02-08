@@ -9,7 +9,7 @@
     "build": "npx nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-      "postinstall": "npx puppeteer browsers install chrome",
+  "postinstall": "npx puppeteer install",
     "start:dev": "npm run copy:templates && npx nest start --watch",
     "copy:templates": "xcopy templates dist\\templates /E /I /Y",
     "start:debug": "node -r tsconfig-paths/register node_modules/.bin/nest start --debug --watch",
@@ -45,7 +45,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^6.19.1",
-    "puppeteer": "^24.36.1",
+"puppeteer": "21.11.0",
     "react-native-modal-datetime-picker": "^18.0.0",
     "react-native-push-notification": "^8.1.1",
     "reflect-metadata": "^0.2.2",
@@ -98,5 +98,6 @@
     "testEnvironment": "node"
   }
 }
+
 
 
