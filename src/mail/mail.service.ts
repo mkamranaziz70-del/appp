@@ -1,5 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
-import sgMail from "@sendgrid/mail";
+import sgMail, { MailDataRequired } from "@sendgrid/mail";
+import * as fs from "fs";
+
+type MailAttachment = {
+  filename: string;
+  path: string; // local file path
+};
 
 @Injectable()
 export class MailService {
@@ -21,17 +27,29 @@ export class MailService {
     to: string;
     subject: string;
     html: string;
+    attachments?: MailAttachment[];
   }) {
     try {
-      await sgMail.send({
+      const msg: MailDataRequired = {
         to: options.to,
         from: {
-          email: process.env.MAIL_FROM!, // must be VERIFIED
+          email: process.env.MAIL_FROM!,
           name: "BoxxPilot",
         },
         subject: options.subject,
         html: options.html,
-      });
+      };
+
+      // ✅ Attachments support
+      if (options.attachments?.length) {
+        msg.attachments = options.attachments.map((att) => ({
+          filename: att.filename,
+          content: fs.readFileSync(att.path).toString("base64"),
+          disposition: "attachment",
+        }));
+      }
+
+      await sgMail.send(msg);
 
       this.logger.log(`📧 Email sent to ${options.to}`);
     } catch (error: any) {
