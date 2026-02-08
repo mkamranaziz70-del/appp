@@ -57,7 +57,7 @@ export class PdfService {
       const html = compiledTemplate(data);
 
      const browser = await puppeteer.launch({
-  headless: "new",
+  headless: true,
   executablePath: puppeteer.executablePath(), // 🔥 MUST
   args: [
     "--no-sandbox",
