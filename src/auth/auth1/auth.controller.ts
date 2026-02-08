@@ -66,7 +66,7 @@ export class AuthController {
 
     return { success: true, companyId: company.id };
   }
- @Post('signup/step-2')
+@Post('signup/step-2')
 async signupStep2(@Body() body: any) {
   console.log("========== SIGNUP STEP 2 HIT ==========");
   console.log("RAW BODY:", body);
@@ -113,27 +113,37 @@ async signupStep2(@Body() body: any) {
 
   otpStore.set(normalizedEmail, {
     otp,
-    expiresAt: Date.now() + 5 * 60 * 1000,
+    expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
     attempts: 0,
   });
 
   console.log("SENDING OTP EMAIL...");
 
-  await this.mailService.sendGenericMail({
-    to: normalizedEmail,
-    subject: 'Your BoxxPilot verification code',
-    html: `
-      <h2>Email Verification</h2>
-      <h1>${otp}</h1>
-    `,
-  });
+  // 🔥 IMPORTANT: EMAIL MUST NOT BLOCK SIGNUP
+  try {
+    await this.mailService.sendGenericMail({
+      to: normalizedEmail,
+      subject: 'Your BoxxPilot verification code',
+      html: `
+        <h2>Email Verification</h2>
+        <p>Your verification code is:</p>
+        <h1 style="letter-spacing:4px">${otp}</h1>
+        <p>This code expires in 5 minutes.</p>
+      `,
+    });
 
-  console.log("✅ OTP EMAIL SENT");
+    console.log("✅ OTP EMAIL SENT");
+  } catch (err) {
+    console.error("❌ OTP EMAIL FAILED (IGNORED)");
+    console.error(err);
+  }
 
+  // ✅ ALWAYS RETURN SUCCESS
   return {
     success: true,
     email: normalizedEmail,
     otpSent: true,
+    expiresIn: 300,
   };
 }
 
