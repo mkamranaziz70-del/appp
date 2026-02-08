@@ -69,36 +69,23 @@ export class AuthController {
 @Post('signup/step-2')
 async signupStep2(@Body() body: any) {
   console.log("========== SIGNUP STEP 2 HIT ==========");
-  console.log("RAW BODY:", body);
 
   const { companyId, fullName, email, phone, password } = body;
 
-  console.log("PARSED:", {
-    companyId,
-    fullName,
-    email,
-    phone,
-    passwordLength: password?.length,
-  });
-
   if (!companyId || !fullName || !email || !password) {
-    console.error("❌ STEP 2 MISSING FIELDS");
     throw new BadRequestException('Missing required fields');
   }
 
   const normalizedEmail = email.toLowerCase();
-  console.log("NORMALIZED EMAIL:", normalizedEmail);
 
   const existingUser = await this.prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
 
   if (existingUser) {
-    console.error("❌ EMAIL ALREADY EXISTS");
     throw new BadRequestException('Email already registered');
   }
 
-  console.log("HASHING PASSWORD...");
   const hashedPassword = await bcrypt.hash(password, 10);
 
   tempUsers.set(companyId, {
@@ -109,36 +96,34 @@ async signupStep2(@Body() body: any) {
   });
 
   const otp = generateOtp();
-  console.log("GENERATED OTP:", otp);
 
   otpStore.set(normalizedEmail, {
     otp,
-    expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+    expiresAt: Date.now() + 5 * 60 * 1000,
     attempts: 0,
   });
 
-  console.log("SENDING OTP EMAIL...");
-
-  // 🔥 IMPORTANT: EMAIL MUST NOT BLOCK SIGNUP
-  try {
-    await this.mailService.sendGenericMail({
+  // 🔥🔥🔥 FIRE & FORGET EMAIL (NO AWAIT)
+  this.mailService
+    .sendGenericMail({
       to: normalizedEmail,
       subject: 'Your BoxxPilot verification code',
       html: `
         <h2>Email Verification</h2>
-        <p>Your verification code is:</p>
-        <h1 style="letter-spacing:4px">${otp}</h1>
-        <p>This code expires in 5 minutes.</p>
+        <h1>${otp}</h1>
       `,
+    })
+    .then(() => {
+      console.log("✅ OTP EMAIL SENT");
+    })
+    .catch(err => {
+      console.error("❌ OTP EMAIL FAILED (IGNORED)");
+      console.error(err);
     });
 
-    console.log("✅ OTP EMAIL SENT");
-  } catch (err) {
-    console.error("❌ OTP EMAIL FAILED (IGNORED)");
-    console.error(err);
-  }
+  // ✅ RESPONSE IMMEDIATELY
+  console.log("✅ STEP 2 RESPONSE SENT");
 
-  // ✅ ALWAYS RETURN SUCCESS
   return {
     success: true,
     email: normalizedEmail,
@@ -146,6 +131,7 @@ async signupStep2(@Body() body: any) {
     expiresIn: 300,
   };
 }
+
 
 
   @Post('signup/verify-otp')
